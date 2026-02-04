@@ -1,12 +1,23 @@
 import { Card, CardContent, Typography, Grid, Box } from '@mui/material';
 import { AccountBalance, Savings, CreditCard } from '@mui/icons-material';
+import { useEffect, useState } from 'react';
 
-const accounts = [
+interface AccountData {
+    id: number;
+    bank: string;
+    type: string;
+    balance: string;
+    accountNumber: string;
+    color: string;
+    icon: React.ReactNode;
+}
+
+const initialAccounts: AccountData[] = [
     {
         id: 1,
         bank: 'Lloyds Bank',
         type: 'Classic Account',
-        balance: '£12,450.00',
+        balance: 'Loading...', // Initial state
         accountNumber: '12-34-56 12345678',
         color: '#006A4D', // Lloyds Green
         icon: <AccountBalance fontSize="large" sx={{ color: '#006A4D' }} />,
@@ -32,6 +43,42 @@ const accounts = [
 ];
 
 const AccountSummary = () => {
+    const [accounts, setAccounts] = useState<AccountData[]>(initialAccounts);
+
+    useEffect(() => {
+        const fetchLloydsBalance = async () => {
+            console.log('[Lloyds Frontend] Initiating fetch for savings balance...');
+            try {
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+                const response = await fetch(`${apiUrl}/api/lloyds/savings`);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                console.log('[Lloyds Frontend] Successfully fetched balance:', data);
+
+                setAccounts(prevAccounts =>
+                    prevAccounts.map(account =>
+                        account.id === 1
+                            ? { ...account, balance: `£${data.balance}` }
+                            : account
+                    )
+                );
+            } catch (error) {
+                console.error('[Lloyds Frontend] Error fetching Lloyds balance:', error);
+                setAccounts(prevAccounts =>
+                    prevAccounts.map(account =>
+                        account.id === 1
+                            ? { ...account, balance: 'Error' }
+                            : account
+                    )
+                );
+            }
+        };
+
+        fetchLloydsBalance();
+    }, []);
+
     return (
         <Grid container spacing={3}>
             {accounts.map((account) => (
